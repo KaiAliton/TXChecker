@@ -1,7 +1,8 @@
 import './App.css'
 import updateSheet from "./tools/index.ts";
 import * as XLSX from 'xlsx';
-import {useEffect, useState} from "react";
+import {useState} from "react";
+import { json2csv } from 'json-2-csv';
 
 function App() {
     const [items, setItems] = useState<[]>(localStorage.getItem('items') ? JSON.parse(localStorage.getItem('items')) : [])
@@ -96,13 +97,16 @@ function App() {
     }
 
     async function downloadCSV() {
-        const csvContent = result.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
-        downloadBlob(csvContent, 'export.csv', 'text/csv;charset=utf-8;')
+        const newResult = result.map(({tx, ...rest}) => {
+            return rest;
+        })
+        const csv = await json2csv(newResult)
+        downloadBlob(csv, 'export.csv', 'text/csv;charset=utf-8;')
     }
 
     async function downloadXLSX() {
         const workbook = XLSX.utils.book_new();
-        const worksheet = XLSX.utils.aoa_to_sheet(result);
+        const worksheet = XLSX.utils.json_to_sheet(result);
         XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
         XLSX.writeFile(workbook, collection + '.xlsx'  || "output.xlsx");
     }
